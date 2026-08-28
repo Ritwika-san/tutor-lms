@@ -1,0 +1,42 @@
+.container { min-height: 100vh; background: #f4f7f6; color: var(--gray-900); }
+.header { background: #183d3a; color: white; border-bottom: 4px solid var(--accent-500); }
+.headerContent, .main { max-width: 1180px; margin: 0 auto; }
+.headerContent { padding: 1.4rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.header h1 { color: white; font-size: 1.35rem; margin-top: .2rem; }
+.kicker, .eyebrow { letter-spacing: .12em; font-size: .72rem; font-weight: 700; }
+.kicker { color: #b6e7dd; }
+.main { padding: 3.2rem 1.25rem 5rem; }
+.intro { max-width: 650px; margin-bottom: 2.4rem; }
+.intro h2 { font-size: clamp(2rem, 5vw, 3.5rem); margin: .4rem 0 .8rem; letter-spacing: 0; }
+.intro p:last-child { color: var(--gray-700); font-size: 1.1rem; }
+.eyebrow { color: #087f70; }
+.notice { padding: .8rem 1rem; margin-bottom: 1.4rem; border-left: 4px solid var(--accent-600); background: #dff5ef; color: #14554d; }
+.formPanel, .workspace { background: white; border: 1px solid var(--gray-200); padding: 1.5rem; margin-bottom: 2.2rem; box-shadow: 0 12px 30px rgba(24,61,58,.07); }
+.formPanel h3, .workspace h3, section > .sectionHeader h3 { margin-top: .25rem; }
+.form { display: grid; gap: .75rem; margin-top: 1rem; }
+.form input, .form textarea, .inlineForm input { width: 100%; }
+.form textarea { min-height: 90px; resize: vertical; }
+.sectionHeader { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.count { color: var(--gray-600); font-size: .9rem; }
+.courseGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.course { background: white; border: 1px solid var(--gray-200); border-top: 4px solid #e1a54b; padding: 1.35rem; min-height: 220px; display: flex; flex-direction: column; }
+.courseMark { color: #bd751d; font-weight: 700; font-size: .8rem; }
+.course h4 { font-size: 1.2rem; margin: .6rem 0; }
+.course p, .assignment span { color: var(--gray-700); line-height: 1.55; }
+.course small, .assignment small { color: var(--gray-600); margin-top: .8rem; }
+.actions { margin-top: auto; padding-top: 1rem; }
+.workspace { margin-top: 2.5rem; }
+.enrolled { margin-top: 2.5rem; }
+.workspaceGrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2rem; }
+.workspace h4 { margin-bottom: .8rem; }
+.assignment { border-top: 1px solid var(--gray-200); padding: 1rem 0; display: flex; flex-direction: column; gap: .25rem; }
+.inlineForm { display: flex; gap: .5rem; margin-top: .75rem; }
+.inlineForm button { flex: 0 0 auto; }
+.upload { display: block; margin-top: 1.5rem; padding: 1rem; border: 1px dashed var(--accent-600); color: #14665d; cursor: pointer; }
+.upload input { display: block; margin-top: .5rem; }
+.review { margin-top: 2rem; border-top: 1px solid var(--gray-200); padding-top: 1rem; }
+.reviewRow { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 0; border-top: 1px solid var(--gray-200); color: var(--gray-700); }
+.rosterTitle { margin-top: 1.5rem; }
+.roster { border-top: 1px solid var(--gray-200); padding: .65rem 0; display: flex; justify-content: space-between; gap: 1rem; }
+.roster small { color: var(--gray-600); }
+@media (max-width: 700px) { .main { padding-top: 2rem; } .workspaceGrid { grid-template-columns: 1fr; gap: 1.5rem; } .sectionHeader { align-items: start; } .inlineForm { flex-direction: column; } .reviewRow { align-items: start; flex-direction: column; } }
