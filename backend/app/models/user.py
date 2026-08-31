@@ -35,6 +35,7 @@ class User(Base):
     courses = relationship("Course", back_populates="tutor")
     enrollments = relationship("Enrollment", back_populates="student", cascade="all, delete-orphan")
     submissions = relationship("Submission", back_populates="student", cascade="all, delete-orphan")
+    doubts = relationship("Doubt", back_populates="student", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, name={self.name}, email={self.email}, role={self.role})>"

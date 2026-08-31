@@ -6,24 +6,35 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.logger import get_logger
 from app.dependencies import get_current_user, require_role
-from app.models import Assignment, Course, CourseMaterial, Enrollment, RoleEnum, Submission, User
+from app.models import Answer, Assignment, Course, CourseMaterial, Doubt, Enrollment, RoleEnum, Submission, User
 from app.schemas import (
+    AnswerResponse,
     AssignmentCreate,
     AssignmentResponse,
     CourseCreate,
     CourseResponse,
+    DoubtCreate,
+    DoubtResponse,
     EnrolledStudent,
     GradeSubmission,
     MaterialResponse,
     SubmissionResponse,
 )
+from app.services.doubt_matching import (
+    generate_answer_from_context,
+    save_answered_doubt,
+    search_answered_doubts,
+    search_course_materials,
+)
 from app.services.ingestion import extract_pdf_text, index_material
 
 router = APIRouter(tags=["lms"])
 logger = get_logger(__name__)
+settings = get_settings()
 
 
 def course_or_404(course_id: int, db: Session) -> Course:
@@ -159,6 +170,103 @@ async def list_submissions(course_id: int, current_user: User = Depends(get_curr
 async def list_enrolled_students(course_id: int, tutor: User = Depends(require_role(RoleEnum.TUTOR)), db: Session = Depends(get_db)):
     course = owned_course(course_id, tutor, db)
     return [enrollment.student for enrollment in course.enrollments]
+
+
+@router.post("/courses/{course_id}/doubts", response_model=DoubtResponse, status_code=status.HTTP_201_CREATED)
+async def create_doubt(course_id: int, request: DoubtCreate, student: User = Depends(require_role(RoleEnum.STUDENT)), db: Session = Depends(get_db)):
+    course = course_or_404(course_id, db)
+    if not enrolled(course_id, student.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Enroll in this course before asking a doubt")
+
+    clean_text = request.text_content.strip()
+    doubt = Doubt(course_id=course_id, student_id=student.id, text_content=clean_text, status="pending")
+    db.add(doubt)
+    db.commit()
+    db.refresh(doubt)
+
+    logger.info("Doubt submission started for course %s by student %s", course_id, student.id)
+    try:
+        match = search_answered_doubts(course_id, clean_text)
+        logger.info("Answered-doubt search for course %s returned score=%s", course_id, getattr(match, "get", lambda *_: None)("similarity"))
+    except Exception as error:
+        logger.exception("Answered-doubt lookup failed for course %s and student %s", course_id, student.id)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Doubt matching is temporarily unavailable") from error
+
+    if match and match.get("similarity", 0.0) >= settings.doubt_similarity_threshold:
+        logger.info("Instant doubt match found for course %s: similarity=%s", course_id, match["similarity"])
+        answer = Answer(doubt_id=doubt.id, content=match["answer_content"], source="matched")
+        db.add(answer)
+        db.commit()
+        db.refresh(answer)
+        doubt.status = "answered"
+        db.commit()
+        db.refresh(doubt)
+        save_answered_doubt(course_id, doubt.id, student.id, answer.id, doubt.text_content, answer.content)
+        logger.info("Matched doubt %s answered from cache for course %s", doubt.id, course_id)
+        return DoubtResponse.model_validate(doubt).model_copy(update={"answer": AnswerResponse.model_validate(answer), "source": answer.source})
+
+    logger.info("No instant match found for doubt %s in course %s; retrieving course materials", doubt.id, course_id)
+    context_chunks = search_course_materials(course_id, clean_text, limit=5)
+    context_text = "\n\n---\n\n".join(context_chunks) if context_chunks else "No relevant course material chunks were found."
+
+    try:
+        generated_text = generate_answer_from_context(clean_text, context_chunks)
+    except Exception as error:
+        logger.exception("LLM answer generation failed for course %s and doubt %s", course_id, doubt.id)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Answer generation failed") from error
+
+    answer = Answer(doubt_id=doubt.id, content=generated_text, source="generated")
+    db.add(answer)
+    db.commit()
+    db.refresh(answer)
+    doubt.status = "answered"
+    db.commit()
+    db.refresh(doubt)
+    save_answered_doubt(course_id, doubt.id, student.id, answer.id, doubt.text_content, answer.content)
+    logger.info("Generated answer stored for doubt %s in course %s using %s retrieved chunks", doubt.id, course_id, len(context_chunks))
+    return DoubtResponse.model_validate(doubt).model_copy(update={"answer": AnswerResponse.model_validate(answer), "source": answer.source})
+
+
+@router.get("/courses/{course_id}/doubts", response_model=List[DoubtResponse])
+async def list_course_doubts(course_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    course = course_or_404(course_id, db)
+    if current_user.role == RoleEnum.TUTOR and course.tutor_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this course")
+    if current_user.role == RoleEnum.STUDENT and not enrolled(course_id, current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You must be enrolled in this course")
+
+    query = db.query(Doubt).filter(Doubt.course_id == course_id)
+    if current_user.role == RoleEnum.STUDENT:
+        query = query.filter(Doubt.student_id == current_user.id)
+    doubts = query.order_by(Doubt.created_at.desc()).all()
+
+    responses: List[DoubtResponse] = []
+    for doubt in doubts:
+        answer = db.query(Answer).filter(Answer.doubt_id == doubt.id).order_by(Answer.created_at.desc()).first()
+        source = answer.source if answer else None
+        responses.append(
+            DoubtResponse.model_validate(doubt).model_copy(update={"answer": AnswerResponse.model_validate(answer) if answer else None, "source": source})
+        )
+    return responses
+
+
+@router.get("/doubts/{doubt_id}", response_model=DoubtResponse)
+async def get_doubt(doubt_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    doubt = db.query(Doubt).filter(Doubt.id == doubt_id).first()
+    if not doubt:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doubt not found")
+
+    if current_user.role == RoleEnum.TUTOR:
+        if doubt.course.tutor_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this course")
+    elif current_user.role == RoleEnum.STUDENT:
+        if doubt.student_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only view your own doubts")
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This resource is not available to admins")
+
+    answer = db.query(Answer).filter(Answer.doubt_id == doubt.id).order_by(Answer.created_at.desc()).first()
+    return DoubtResponse.model_validate(doubt).model_copy(update={"answer": AnswerResponse.model_validate(answer) if answer else None, "source": answer.source if answer else None})
 
 
 @router.post("/courses/{course_id}/materials", response_model=MaterialResponse, status_code=status.HTTP_201_CREATED)

@@ -39,4 +39,20 @@
 .rosterTitle { margin-top: 1.5rem; }
 .roster { border-top: 1px solid var(--gray-200); padding: .65rem 0; display: flex; justify-content: space-between; gap: 1rem; }
 .roster small { color: var(--gray-600); }
+.doubtPanel { background: white; border: 1px solid var(--gray-200); padding: 1.5rem; margin-top: 2rem; box-shadow: 0 12px 30px rgba(24,61,58,.07); }
+.doubtForm { display: grid; gap: .75rem; margin-bottom: 1rem; }
+.doubtForm textarea { min-height: 108px; resize: vertical; }
+.answerCard, .doubtItem { border: 1px solid var(--gray-200); background: #f9fbfb; border-radius: 14px; padding: 1rem; }
+.answerCard { margin-bottom: 1.5rem; }
+.badge { display: inline-flex; align-items: center; border-radius: 999px; padding: .35rem .65rem; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+.instant { background: #dff5ef; color: #14554d; }
+.generated { background: #fff4db; color: #8b5a00; }
+.historyList { display: grid; gap: .9rem; }
+.historyList h4 { margin-bottom: .5rem; }
+.doubtItem { display: grid; gap: .8rem; }
+.doubtMeta { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.doubtPrompt { color: var(--gray-800); line-height: 1.5; }
+.answerBox { border-top: 1px solid var(--gray-200); padding-top: .85rem; }
+.answerBox p { color: var(--gray-700); line-height: 1.5; margin-top: .35rem; }
+.emptyState { color: var(--gray-600); }
 @media (max-width: 700px) { .main { padding-top: 2rem; } .workspaceGrid { grid-template-columns: 1fr; gap: 1.5rem; } .sectionHeader { align-items: start; } .inlineForm { flex-direction: column; } .reviewRow { align-items: start; flex-direction: column; } }

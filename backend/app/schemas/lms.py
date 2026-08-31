@@ -68,3 +68,33 @@ class EnrolledStudent(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DoubtCreate(BaseModel):
+    text_content: str = Field(..., min_length=1, max_length=5000)
+
+
+class AnswerResponse(BaseModel):
+    id: int
+    doubt_id: int
+    content: str
+    source: str
+    like_count: int = 0
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DoubtResponse(BaseModel):
+    id: int
+    course_id: int
+    student_id: int
+    text_content: str
+    status: str
+    created_at: datetime
+    answer: Optional[AnswerResponse] = None
+    source: Optional[str] = None
+
+    class Config:
+        from_attributes = True

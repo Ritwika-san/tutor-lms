@@ -110,16 +110,18 @@ tutor-lms/
 
 ### Prerequisites
 
-- Python 3.9+ (backend)
+- Python 3.12.x for the backend RAG stack (recommended and verified for this project)
 - Node.js 18+ (frontend)
 - PostgreSQL 12+ (database)
 
+> Python 3.14/3.13 were not compatible with the current Chroma + sentence-transformers dependency chain in this setup, so use Python 3.12 for the backend virtual environment.
+
 ### Backend Setup
 
-1. **Create virtual environment** (from `backend/` directory):
+1. **Create a Python 3.12 virtual environment** (from `backend/` directory):
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   py -3.12 -m venv venv
+   .\venv\Scripts\activate  # On macOS/Linux: source venv/bin/activate
    ```
 
 2. **Install dependencies**:

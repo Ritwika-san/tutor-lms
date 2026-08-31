@@ -69,7 +69,15 @@ async def register(request: UserRegisterRequest, db: Session = Depends(get_db)) 
         )
 
     # Create new user
-    hashed_password = hash_password(request.password)
+    try:
+        hashed_password = hash_password(request.password)
+    except ValueError as exc:
+        logger.warning("Registration failed for email=%s: %s", request.email, exc)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
     new_user = User(
         name=request.name,
         email=request.email,

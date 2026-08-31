@@ -23,6 +23,9 @@ class Settings(BaseSettings):
         "ENVIRONMENT", "development"
     )
     chroma_path: str = os.getenv("CHROMA_PATH", "./chroma_data")
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
+    groq_model: str = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    doubt_similarity_threshold: float = float(os.getenv("DOUBT_SIMILARITY_THRESHOLD", "0.85"))
 
     # Password validation
     min_password_length: int = 8

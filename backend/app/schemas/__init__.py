@@ -8,10 +8,13 @@ from app.schemas.user import (
     ValidationErrorResponse,
 )
 from app.schemas.lms import (
+    AnswerResponse,
     AssignmentCreate,
     AssignmentResponse,
     CourseCreate,
     CourseResponse,
+    DoubtCreate,
+    DoubtResponse,
     EnrolledStudent,
     GradeSubmission,
     MaterialResponse,
@@ -34,4 +37,7 @@ __all__ = [
     "GradeSubmission",
     "MaterialResponse",
     "EnrolledStudent",
+    "DoubtCreate",
+    "DoubtResponse",
+    "AnswerResponse",
 ]

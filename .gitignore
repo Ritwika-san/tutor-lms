@@ -46,3 +46,6 @@ Thumbs.db
 *.db
 **/__pycache__/
 *.tsbuildinfo
+
+.venv/
+backend/smoke_test_material.pdf

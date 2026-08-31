@@ -6,6 +6,9 @@ export interface Submission { id: number; assignment_id: number; student_id: num
 export interface EnrolledStudent { id: number; name: string; email: string; }
 export interface CourseInput { title: string; description: string; }
 export interface AssignmentInput { title: string; description: string; due_date: string; }
+export interface Answer { id: number; doubt_id: number; content: string; source: 'matched' | 'generated'; like_count: number; created_at: string; }
+export interface Doubt { id: number; course_id: number; student_id: number; text_content: string; status: 'pending' | 'answered'; created_at: string; answer: Answer | null; source: 'matched' | 'generated' | null; }
+export interface DoubtInput { text_content: string; }
 
 const lmsAPI = {
   listCourses: async () => (await apiClient.get<Course[]>('/courses')).data,
@@ -17,6 +20,9 @@ const lmsAPI = {
   submit: async (assignmentId: number, fileUrl: string) => (await apiClient.post<Submission>(`/assignments/${assignmentId}/submit`, null, { params: { file_url: fileUrl } })).data,
   listSubmissions: async (courseId: number) => (await apiClient.get<Submission[]>(`/courses/${courseId}/submissions`)).data,
   listStudents: async (courseId: number) => (await apiClient.get<EnrolledStudent[]>(`/courses/${courseId}/students`)).data,
+  askDoubt: async (courseId: number, data: DoubtInput) => (await apiClient.post<Doubt>(`/courses/${courseId}/doubts`, data)).data,
+  listCourseDoubts: async (courseId: number) => (await apiClient.get<Doubt[]>(`/courses/${courseId}/doubts`)).data,
+  getDoubt: async (doubtId: number) => (await apiClient.get<Doubt>(`/doubts/${doubtId}`)).data,
   grade: async (submissionId: number, grade: number, feedback: string) => (await apiClient.patch<Submission>(`/submissions/${submissionId}/grade`, { grade, feedback })).data,
   uploadMaterial: async (courseId: number, file: File) => {
     const form = new FormData();

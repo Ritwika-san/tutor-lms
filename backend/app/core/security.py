@@ -15,6 +15,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
+    if len(password.encode("utf-8")) > 72:
+        raise ValueError("Password exceeds bcrypt maximum length of 72 bytes")
     return pwd_context.hash(password)
 
 
@@ -36,6 +38,9 @@ def validate_password_strength(password: str) -> tuple[bool, Optional[str]]:
         errors.append(
             f"Password must be at least {settings.min_password_length} characters long"
         )
+
+    if len(password.encode("utf-8")) > 72:
+        errors.append("Password must be 72 bytes or fewer for bcrypt compatibility")
 
     if settings.require_uppercase and not re.search(r"[A-Z]", password):
         errors.append("Password must contain at least one uppercase letter")

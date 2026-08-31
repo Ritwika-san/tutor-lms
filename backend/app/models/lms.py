@@ -18,6 +18,7 @@ class Course(Base):
     enrollments = relationship("Enrollment", back_populates="course", cascade="all, delete-orphan")
     assignments = relationship("Assignment", back_populates="course", cascade="all, delete-orphan")
     materials = relationship("CourseMaterial", back_populates="course", cascade="all, delete-orphan")
+    doubts = relationship("Doubt", back_populates="course", cascade="all, delete-orphan")
 
 
 class Enrollment(Base):
@@ -60,6 +61,34 @@ class Submission(Base):
     student = relationship("User", back_populates="submissions")
 
 
+class Doubt(Base):
+    __tablename__ = "doubts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    text_content = Column(Text, nullable=False)
+    status = Column(String(20), nullable=False, default="pending")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    course = relationship("Course", back_populates="doubts")
+    student = relationship("User", back_populates="doubts")
+    answers = relationship("Answer", back_populates="doubt", cascade="all, delete-orphan")
+
+
+class Answer(Base):
+    __tablename__ = "answers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doubt_id = Column(Integer, ForeignKey("doubts.id", ondelete="CASCADE"), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    source = Column(String(20), nullable=False)
+    like_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    doubt = relationship("Doubt", back_populates="answers")
+
+
 class CourseMaterial(Base):
     __tablename__ = "course_materials"
 
@@ -69,3 +98,4 @@ class CourseMaterial(Base):
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     course = relationship("Course", back_populates="materials")
+    
