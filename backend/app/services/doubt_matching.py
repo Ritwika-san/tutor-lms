@@ -4,6 +4,8 @@ from typing import Any
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.services.chroma_collections import cosine_similarity_from_distance, get_cosine_collection
+from app.services.embeddings import embed_texts
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -18,18 +20,8 @@ def _get_chroma_client():
     return chromadb.PersistentClient(path=settings.chroma_path)
 
 
-def _get_embedding_model():
-    try:
-        from sentence_transformers import SentenceTransformer
-    except ImportError as error:
-        raise RuntimeError("RAG dependencies are not installed") from error
-
-    return SentenceTransformer("all-MiniLM-L6-v2")
-
-
-def embed_text(text: str):
-    model = _get_embedding_model()
-    embedding = model.encode(text).tolist()
+def embed_text(text: str) -> list[float]:
+    embedding = embed_texts([text])[0]
     logger.info("Embedding generated for text length=%s", len(text))
     return embedding
 
@@ -43,7 +35,7 @@ def _answered_collection_name(course_id: int) -> str:
 # first and only fall back to slower material retrieval if no confident match exists.
 def search_answered_doubts(course_id: int, doubt_text: str) -> dict[str, Any] | None:
     client = _get_chroma_client()
-    collection = client.get_or_create_collection(_answered_collection_name(course_id))
+    collection = get_cosine_collection(client, _answered_collection_name(course_id))
     query_embedding = embed_text(doubt_text)
     results = collection.query(
         query_embeddings=[query_embedding],
@@ -61,10 +53,8 @@ def search_answered_doubts(course_id: int, doubt_text: str) -> dict[str, Any] | 
         logger.info("Answered-doubt query returned no distances for course %s", course_id)
         return None
 
-    top_score = 1.0 - float(scores[0])
+    top_score = cosine_similarity_from_distance(float(scores[0]))
     logger.info("Answered-doubt match search for course %s produced top similarity=%s", course_id, top_score)
-    if top_score < 0.0:
-        top_score = 0.0
 
     if results.get("documents") and results["documents"][0]:
         answer_content = results["metadatas"][0][0].get("answer_content")
@@ -76,9 +66,9 @@ def search_answered_doubts(course_id: int, doubt_text: str) -> dict[str, Any] | 
 
 def save_answered_doubt(course_id: int, doubt_id: int, student_id: int, answer_id: int, doubt_text: str, answer_content: str) -> None:
     client = _get_chroma_client()
-    collection = client.get_or_create_collection(_answered_collection_name(course_id))
+    collection = get_cosine_collection(client, _answered_collection_name(course_id))
     embedding = embed_text(doubt_text)
-    collection.add(
+    collection.upsert(
         ids=[f"course-{course_id}-doubt-{doubt_id}-answer-{answer_id}"],
         documents=[doubt_text],
         embeddings=[embedding],
@@ -89,7 +79,7 @@ def save_answered_doubt(course_id: int, doubt_id: int, student_id: int, answer_i
 
 def search_course_materials(course_id: int, doubt_text: str, limit: int = 5) -> list[str]:
     client = _get_chroma_client()
-    collection = client.get_or_create_collection("course_materials")
+    collection = get_cosine_collection(client, "course_materials")
     query_embedding = embed_text(doubt_text)
     results = collection.query(
         query_embeddings=[query_embedding],

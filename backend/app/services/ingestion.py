@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import TypedDict
 
 from app.core.config import get_settings
+from app.services.chroma_collections import get_cosine_collection
+from app.services.embeddings import embed_texts
 
 
 class IngestionStats(TypedDict):
@@ -30,7 +32,6 @@ def chunk_text(text: str, chunk_size: int = 1000) -> list[str]:
 def index_material(course_id: int, material_id: int, text: str) -> IngestionStats:
     try:
         import chromadb
-        from sentence_transformers import SentenceTransformer
     except ImportError as error:
         raise RuntimeError("RAG dependencies are not installed") from error
 
@@ -38,10 +39,10 @@ def index_material(course_id: int, material_id: int, text: str) -> IngestionStat
     if not chunks:
         raise ValueError("The uploaded PDF contains no extractable text")
     client = chromadb.PersistentClient(path=get_settings().chroma_path)
-    collection = client.get_or_create_collection("course_materials")
-    embeddings = SentenceTransformer("all-MiniLM-L6-v2").encode(chunks).tolist()
+    collection = get_cosine_collection(client, "course_materials")
+    embeddings = embed_texts(chunks)
     ids = [f"course-{course_id}-material-{material_id}-{index}" for index in range(len(chunks))]
-    collection.add(
+    collection.upsert(
         ids=ids,
         documents=chunks,
         embeddings=embeddings,
