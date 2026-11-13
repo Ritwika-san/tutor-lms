@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,6 +14,13 @@ logger = get_logger(__name__)
 # Create all database tables
 Base.metadata.create_all(bind=engine)
 
+cors_origins = os.getenv("CORS_ORIGINS")
+allowed_origins = (
+    [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+    if cors_origins is not None
+    else ["http://localhost:5173", "http://localhost:3000"]
+)
+
 # Create FastAPI app
 app = FastAPI(
     title="Tutor LMS API",
@@ -24,7 +33,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite and common dev ports
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

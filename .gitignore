@@ -1,6 +1,7 @@
 # Backend
 backend/.env
 backend/chroma_data/
+backend/.cache/
 backend/uploads/
 backend/.venv/
 backend/venv/
@@ -49,3 +50,10 @@ Thumbs.db
 
 .venv/
 backend/smoke_test_material.pdf
+.neon
+node_modules/
+
+# Root-level Neon setup leftovers
+/neon.ts
+/package.json
+/package-lock.json
