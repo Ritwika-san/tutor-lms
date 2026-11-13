@@ -6,8 +6,12 @@ from app.core.config import get_settings
 settings = get_settings()
 
 # Create database engine
+database_url = settings.database_url
+if database_url.startswith("postgres://"):
+    database_url = "postgresql://" + database_url[len("postgres://"):]
+
 engine = create_engine(
-    settings.database_url,
+    database_url,
     echo=settings.environment == "development",
     pool_pre_ping=True,  # Test connections before using them
 )

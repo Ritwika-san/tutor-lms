@@ -9,9 +9,8 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Database
-    database_url: str = os.getenv(
-        "DATABASE_URL", "postgresql://user:password@localhost:5432/tutor_lms"
-    )
+    database_url: str
+    database_url_unpooled: str | None = None
 
     # JWT
     jwt_secret_key: str
@@ -25,7 +24,7 @@ class Settings(BaseSettings):
     chroma_path: str = os.getenv("CHROMA_PATH", "./chroma_data")
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     groq_model: str = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-    doubt_similarity_threshold: float = float(os.getenv("DOUBT_SIMILARITY_THRESHOLD", "0.85"))
+    doubt_similarity_threshold: float = float(os.getenv("DOUBT_SIMILARITY_THRESHOLD", "0.95"))
 
     # Password validation
     min_password_length: int = 8
